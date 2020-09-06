@@ -1,0 +1,13 @@
+package src.main.scala
+
+import com.spark.drools.util.Employee.EmployeeInput
+import com.spark.drools.service.DroolsFunctions
+
+dialect "mvel"
+
+rule "Sample Rule1"
+when
+	$response : EmployeeInput(job == "CLERK" , deptno == 20);
+then 
+	DroolsFunctions.insertResponse(kcontext, $response, "Pass");
+end

@@ -1,0 +1,41 @@
+package com.spark.drools.driver
+
+import org.apache.spark.sql.SparkSession
+import com.spark.drools.service.DroolsService
+
+object EmployeeDriver {
+  def main(args: Array[String]): Unit = {
+    val spark = SparkSession.builder().appName("Spark drolls integration").master("local[1]").getOrCreate()
+    spark.sparkContext.setLogLevel("ERROR")
+
+    val emp = Seq(
+      ("7369", "SMITH", "CLERK", "7902", "1980-12-17", "800.00", null, "20"),
+      ("7499", "ALLEN", "SALESMAN", "7698", "1981-02-20", "1600.00", "300.00", "30"),
+      ("7521", "WARD", "SALESMAN", "7698", "1981-02-22", "1250.00", "500.00", "30"),
+      ("7566", "JONES", "MANAGER", "7839", "1981-04-02", "2975.00", null, "20"),
+      ("7654", "MARTIN", "SALESMAN", "7698", "1981-09-28", "1250.00", "1400.00", "30"),
+      ("7698", "BLAKE", "MANAGER", "7839", "1981-05-01", "2850.00", null, "30"),
+      ("7782", "CLARK", "MANAGER", "7839", "1981-06-09", "2450.00", null, "10"),
+      ("7788", "SCOTT", "ANALYST", "7566", "1982-12-09", "3000.00", null, "20"),
+      ("7839", "KING", "PRESIDENT", null, "1981-11-17", "5000.00", null, "10"),
+      ("7844", "TURNER", "SALESMAN", "7698", "1981-09-08", "1500.00", "0.00", "30"),
+      ("7876", "ADAMS", "CLERK", "7788", "1983-01-12", "1100.00", null, "20"),
+      ("7900", "JAMES", "CLERK", "7698", "1981-12-03", "950.00", null, "30"),
+      ("7902", "FORD", "ANALYST", "7566", "1981-12-03", "3000.00", null, "20"),
+      ("7934", "MILLER", "CLERK", "7782", "1982-01-23", "1300.00", null, "10"))
+
+    import spark.implicits._
+    val empDF = emp.toDF()
+    empDF.show()
+
+    val kbase = DroolsService.loadDrlFile("src/main/resources/rules/rules.drl")
+    val broadcastKbase = spark.sparkContext.broadcast(kbase)
+
+    empDF.foreach(x => {
+      println("Input: " + x)
+      val out = DroolsService.fireAllRules(broadcastKbase.value, x)
+      if (out != null)
+        println("Response: " + out)
+    })
+  }
+}
